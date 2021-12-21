@@ -32,69 +32,28 @@ def rightCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
     [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
     iterations = [tolmax]
     while tolmax < -10 ** (-10):
-        inf_b[int(envs[0][0]) - 1][0] += tolmax - 0.1
-        sup_b[int(envs[0][0]) - 1][0] -= tolmax - 0.1
+        for i in range(len(inf_b)):
+            inf_b[i][0] += tolmax - 0.1
+            sup_b[i][0] -= tolmax - 0.1
         [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
         iterations.append(tolmax)
+    print(tolmax)
+    print(argmax)
     plot_tolmax(iterations)
     return inf_b, sup_b, argmax
 
-def new_A(inf_A, sup_A, tolmax, envs, argmax):
+def new_A(inf_A, sup_A, tolmax):
     tolmax = math.fabs(tolmax)
     count = 0
-    for i in range(len(envs)):
-        index = int(envs[i][0]) - 1
-        rad1 = (sup_A[index][0] - inf_A[index][0]) / 2
-        rad2 = (sup_A[index][1] - inf_A[index][1]) / 2
-        if rad1 == rad2 == 0:
-            if (count + 1) == len(envs):
-                print("not answer")
-                return [], []
-            else:
-                count += 1
-            continue
-        if rad1 == 0:
-            arr = [math.fabs(sup_A[index][1]) * math.fabs(argmax[1]), math.fabs(inf_A[index][1]) * math.fabs(argmax[1])]
-            e = tolmax / max(arr)
-            if rad2 >= e:
-                sup_A[index][1] -= e
-                inf_A[index][1] += e
-                return inf_A, sup_A
-            else:
-                e = rad2
-                sup_A[index][1] -= e
-                inf_A[index][1] += e
-                continue
-        if rad2 == 0:
-            arr = [math.fabs(sup_A[index][0]) * math.fabs(argmax[0]), math.fabs(inf_A[index][0]) * math.fabs(argmax[0])]
-            e = tolmax / max(arr)
-            if rad1 >= e:
-                sup_A[index][0] -= e
-                inf_A[index][0] += e
-                return inf_A, sup_A
-            else:
-                e = rad1
-                sup_A[index][0] -= e
-                inf_A[index][0] += e
-                continue
-        m = rad2 / rad1
-        arr = [math.fabs(argmax[0] * inf_A[index][0] + argmax[1] * inf_A[index][1]),
-               math.fabs(argmax[0] * inf_A[index][0] + argmax[1] * sup_A[index][1]),
-               math.fabs(argmax[0] * sup_A[index][0] + argmax[1] * inf_A[index][1]),
-               math.fabs(argmax[0] * sup_A[index][0] + argmax[1] * sup_A[index][1])]
-        e = tolmax / max(arr)
-        if rad1 >= e:
-            sup_A[index][0] -= e
-            inf_A[index][0] += e
-            sup_A[index][1] -= m * e
-            inf_A[index][1] += m * e
-            return inf_A, sup_A
-        else:
-            e = rad1
-            sup_A[index][0] -= e
-            inf_A[index][0] += e
-            sup_A[index][1] -= m * e
-            inf_A[index][1] += m * e
+    for index in range(len(inf_A)):
+        rad1 = (sup_A[index][0] - inf_A[index][0]) / 4
+        rad2 = (sup_A[index][1] - inf_A[index][1]) / 4
+        mid1 = (sup_A[index][0] + inf_A[index][0]) / 2
+        mid2 = (sup_A[index][1] + inf_A[index][1]) / 2
+        inf_A[index][0] = mid1 - rad1
+        sup_A[index][0] = mid1 + rad1
+        inf_A[index][1] = mid2 - rad2
+        sup_A[index][1] = mid2 + rad2
     return inf_A, sup_A
 
 def matrixCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
@@ -105,11 +64,13 @@ def matrixCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
     [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
     iterations = [tolmax]
     while tolmax < -10 ** (-10):
-        inf_A, sup_A = new_A(inf_A, sup_A, tolmax, envs, argmax)
+        inf_A, sup_A = new_A(inf_A, sup_A, tolmax)
         if len(inf_A) == 0:
             return [], [], []
         [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
         iterations.append(tolmax)
+    print(tolmax)
+    print(argmax)
     plot_tolmax(iterations)
     return inf_A, sup_A, argmax
 
@@ -168,3 +129,5 @@ plotRectangle(inf, sup, "Коррекция правой части")
 if len(inf_A1) != 0:
     inf, sup = var_answer(inf_A1, sup_A1, inf_b, sup_b, argmax_A)
     plotRectangle(inf, sup, "Коррекция матрицы")
+
+

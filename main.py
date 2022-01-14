@@ -7,21 +7,30 @@ from plot_images import plot_tolmax
 from tolsolvty import tolsolvty
 import numpy as np
 
-def plotRectangle(inf, sup, text):
+def plotRectangle(inf1, sup1, name1, inf2, sup2, name2, title):
     fig, ax = plt.subplots()
 
-    x1_low = inf[0]
-    x1_high = sup[0]
-    x2_low = inf[1]
-    x2_high = sup[1]
+    x1_low = inf1[0]
+    x1_high = sup1[0]
+    x2_low = inf1[1]
+    x2_high = sup1[1]
     ax.add_patch(
         pth.Rectangle((x1_low, x2_low), (x1_high - x1_low), (x2_high - x2_low),
                     linewidth=1, edgecolor='r', facecolor='none'))
 
+    x1_low = inf2[0]
+    x1_high = sup2[0]
+    x2_low = inf2[1]
+    x2_high = sup2[1]
+    ax.add_patch(
+        pth.Rectangle((x1_low, x2_low), (x1_high - x1_low), (x2_high - x2_low),
+                      linewidth=1, edgecolor='g', facecolor='none'))
+
     ax.plot()
     plt.xlabel("x1")
     plt.ylabel("x2")
-    plt.title(text)
+    plt.legend([name1, name2])
+    plt.title(title)
     plt.show()
 
 def rightCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
@@ -42,10 +51,23 @@ def rightCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
     plot_tolmax(iterations)
     return inf_b, sup_b, argmax
 
-def new_A(inf_A, sup_A, tolmax):
-    tolmax = math.fabs(tolmax)
-    count = 0
-    for index in range(len(inf_A)):
+def new_A(inf_A, sup_A, tolmax, argmax, envs):
+    index = 0
+    while np.array_equal(inf_A[int(envs[index][0] - 1)], sup_A[int(envs[index][0] - 1)]):
+        index += 1
+    index = int(envs[index][0] - 1)
+    for i in range(len(inf_A[index])):
+        r = (sup_A[index][i] - inf_A[index][i]) / 2
+        if -tolmax > r * argmax[i]:
+            sup_A[index][i] -= r
+            inf_A[index][i] += r
+            tolmax += r * argmax[i]
+            print(tolmax)
+        else:
+            sup_A[index][i] += tolmax
+            inf_A[index][i] -= tolmax
+            break
+    '''for index in range(len(inf_A)):
         rad1 = (sup_A[index][0] - inf_A[index][0]) / 4
         rad2 = (sup_A[index][1] - inf_A[index][1]) / 4
         mid1 = (sup_A[index][0] + inf_A[index][0]) / 2
@@ -53,7 +75,7 @@ def new_A(inf_A, sup_A, tolmax):
         inf_A[index][0] = mid1 - rad1
         sup_A[index][0] = mid1 + rad1
         inf_A[index][1] = mid2 - rad2
-        sup_A[index][1] = mid2 + rad2
+        sup_A[index][1] = mid2 + rad2'''
     return inf_A, sup_A
 
 def matrixCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
@@ -64,7 +86,7 @@ def matrixCorrection(inf_A1, sup_A1, inf_b1, sup_b1):
     [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
     iterations = [tolmax]
     while tolmax < -10 ** (-10):
-        inf_A, sup_A = new_A(inf_A, sup_A, tolmax)
+        inf_A, sup_A = new_A(inf_A, sup_A, tolmax, argmax, envs)
         if len(inf_A) == 0:
             return [], [], []
         [tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
@@ -124,10 +146,7 @@ if len(inf_A1) == 0:
     print("не получается корректировать матрицу")
 
 inf, sup = var_answer(inf_A, sup_A, inf_b1, sup_b1, argmax_b)
-plotRectangle(inf, sup, "Коррекция правой части")
-
-if len(inf_A1) != 0:
-    inf, sup = var_answer(inf_A1, sup_A1, inf_b, sup_b, argmax_A)
-    plotRectangle(inf, sup, "Коррекция матрицы")
-
-
+[tolmax, argmax, envs, ccode] = tolsolvty(inf_A, sup_A, inf_b, sup_b)
+plotRectangle(inf, sup, 'Коррекция', [-tolmax / 2, -tolmax / 2], [tolmax / 2, tolmax / 2], 'Допусковое множество', "Коррекция правой части")
+plt.ion()
+plt.show()
